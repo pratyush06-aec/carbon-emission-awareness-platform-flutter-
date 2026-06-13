@@ -1,8 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { PrismaClient } from "@prisma/client";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const prisma = new PrismaClient();
 
 export async function POST(req) {
   try {
@@ -17,6 +19,17 @@ export async function POST(req) {
     if (!activities || !activities.trim()) {
       return new Response(JSON.stringify({ error: "No activities provided" }), { status: 400 });
     }
+
+    // Save the user's routine to the database
+    await prisma.activity.create({
+      data: {
+        userId: session.user.id,
+        type: "ROUTINE",
+        description: activities,
+        carbonValue: 0,
+        xpEarned: 0,
+      }
+    });
 
     const model = genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
 
