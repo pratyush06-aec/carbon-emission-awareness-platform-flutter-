@@ -101,15 +101,19 @@
   align-items: center;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   text-align: center;
-  animation: cardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  
+  /* Initial Transform will be overridden by JS */
+  transform-style: preserve-3d;
+  will-change: transform;
+  
+  /* Entrance */
   opacity: 0;
-  transform: translateY(20px);
+  animation: cardFadeIn 0.8s ease forwards;
 }
 
-@keyframes cardEntrance {
+@keyframes cardFadeIn {
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
