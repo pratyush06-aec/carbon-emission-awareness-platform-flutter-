@@ -1,12 +1,12 @@
 .container {
-  /* Default mouse positions if mouse hasn't moved */
+  /* Default mouse positions */
   --mouse-x: 50%;
   --mouse-y: 50%;
   
   position: relative;
   min-height: 100vh;
   width: 100vw;
-  background-color: #0d1117; /* Base dark theme */
+  background-color: #060709; /* Deep, sleek space black */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,9 +15,9 @@
 
 /* 
   Stitch AI Inspired Cursor Tracking Glow
-  Creates a soft radial gradient that follows the mouse cursor 
+  Massive, extremely soft radial spotlight that tracks the mouse 
 */
-.container::before {
+.container::after {
   content: '';
   position: absolute;
   top: 0;
@@ -25,38 +25,61 @@
   width: 100%;
   height: 100%;
   background: radial-gradient(
-    800px circle at var(--mouse-x) var(--mouse-y),
-    rgba(248, 81, 73, 0.15), /* Subtle red/orange glow */
-    transparent 40%
+    1200px circle at var(--mouse-x) var(--mouse-y),
+    rgba(255, 255, 255, 0.05), /* Very subtle bright glow */
+    transparent 50%
   );
   z-index: 1;
   pointer-events: none;
-  transition: opacity 0.5s ease;
+  mix-blend-mode: screen;
 }
 
 /* 
   Antigravity Inspired Ambient Fluid Background
-  Slowly drifting, large amorphous dark gradients behind the content
+  Deep, massive blurred orbs slowly drifting behind everything
 */
 .ambientBackground {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: 
-    radial-gradient(circle at 50% 50%, rgba(46, 160, 67, 0.05) 0%, transparent 60%),
-    radial-gradient(circle at 80% 20%, rgba(13, 17, 23, 1) 0%, transparent 50%),
-    radial-gradient(circle at 20% 80%, rgba(248, 81, 73, 0.03) 0%, transparent 50%);
-  animation: slowPan 30s ease-in-out infinite alternate;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   z-index: 0;
   pointer-events: none;
+  filter: blur(120px); /* Extreme blur creates the fluid mesh look */
+  opacity: 0.7;
 }
 
-@keyframes slowPan {
+.ambientBackground::before,
+.ambientBackground::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  animation: floatOrb 20s ease-in-out infinite alternate;
+}
+
+.ambientBackground::before {
+  width: 70vw;
+  height: 70vw;
+  background: rgba(46, 160, 67, 0.15); /* Subdued CarbonSense green */
+  top: -20%;
+  left: -10%;
+}
+
+.ambientBackground::after {
+  width: 60vw;
+  height: 60vw;
+  background: rgba(248, 81, 73, 0.08); /* Faint accent color */
+  bottom: -20%;
+  right: -10%;
+  animation-delay: -5s;
+  animation-duration: 25s;
+}
+
+@keyframes floatOrb {
   0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-5%, 5%) scale(1.1); }
-  100% { transform: translate(5%, -5%) scale(1); }
+  50% { transform: translate(15%, 10%) scale(1.1); }
+  100% { transform: translate(-10%, 20%) scale(0.9); }
 }
 
 /* 
