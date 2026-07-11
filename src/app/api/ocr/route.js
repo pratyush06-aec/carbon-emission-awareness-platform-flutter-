@@ -1,10 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request) {
   try {
+    const userAuth = await verifyAuth(request);
+    if (!userAuth) return unauthorizedResponse();
+
     const formData = await request.formData();
     const file = formData.get('receipt');
 

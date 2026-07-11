@@ -1,15 +1,14 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "../../auth/[...nextauth]/route"
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth'
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
 export async function POST(req) {
   try {
-    const session = await getServerSession(authOptions)
+    const userAuth = await verifyAuth(req)
 
-    if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+    if (!userAuth) {
+      return unauthorizedResponse()
     }
 
     const body = await req.json()
@@ -19,7 +18,7 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: "Missing xpAmount" }), { status: 400 })
     }
 
-    const userId = session.user.id
+    const userId = userAuth.userId
 
     // Update user balance and create ledger entry in a transaction
     const result = await prisma.$transaction(async (tx) => {
