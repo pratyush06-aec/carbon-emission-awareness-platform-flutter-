@@ -1,18 +1,17 @@
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "../auth/[...nextauth]/route"
+import { verifyAuth, unauthorizedResponse } from '@/lib/auth'
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
 export async function GET(req) {
   try {
-    const session = await getServerSession(authOptions)
+    const userAuth = await verifyAuth(req)
 
-    if (!session || !session.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+    if (!userAuth) {
+      return unauthorizedResponse()
     }
 
-    const userId = session.user.id
+    const userId = userAuth.userId
 
     // Fetch user with ledger entries
     const user = await prisma.user.findUnique({
