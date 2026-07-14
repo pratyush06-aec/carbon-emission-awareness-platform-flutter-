@@ -30,7 +30,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final storage = ref.read(secureStorageProvider);
     final token = await storage.read(key: 'jwt_token');
     if (token != null) {
-      state = state.copyWith(isAuthenticated: true);
+      // Verify the token is still valid by calling the profile endpoint
+      try {
+        await dio.get('/profile');
+        state = state.copyWith(isAuthenticated: true);
+      } catch (e) {
+        // Token is invalid or expired — clear it
+        await storage.delete(key: 'jwt_token');
+        state = state.copyWith(isAuthenticated: false);
+      }
     }
   }
 
@@ -47,8 +55,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       state = state.copyWith(isLoading: false, isAuthenticated: true);
       return true;
-    } on DioException catch (e) {
-      final errorMessage = e.response?.data['error'] ?? 'Login failed';
+    // } on DioException catch (e) {
+    //   print('--- DIO ERROR IN LOGIN ---');
+    //   print('DIO_TYPE: ${e.type}');
+    //   print('DIO_MESSAGE: ${e.message}');
+    //   print('DIO_RESPONSE: ${e.response?.data}');
+    //   print('--------------------------');
+      
+      String errorMessage = 'Login failed';
+      if (e.response == null) {
+        errorMessage = 'Network Error: Cannot reach server (10.0.2.2)';
+      } else if (e.response?.data is Map && e.response?.data['error'] != null) {
+        errorMessage = e.response?.data['error'];
+      }
       state = state.copyWith(isLoading: false, error: errorMessage);
       return false;
     } catch (e) {
@@ -71,8 +90,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       state = state.copyWith(isLoading: false, isAuthenticated: true);
       return true;
-    } on DioException catch (e) {
-      final errorMessage = e.response?.data['error'] ?? 'Registration failed';
+    // } on DioException catch (e) {
+    //   print('--- DIO ERROR IN REGISTER ---');
+    //   print('DIO_TYPE: ${e.type}');
+    //   print('DIO_MESSAGE: ${e.message}');
+    //   print('DIO_RESPONSE: ${e.response?.data}');
+    //   print('-----------------------------');
+
+      String errorMessage = 'Registration failed';
+      if (e.response == null) {
+        errorMessage = 'Network Error: Cannot reach server (10.0.2.2)';
+      } else if (e.response?.data is Map && e.response?.data['error'] != null) {
+        errorMessage = e.response?.data['error'];
+      }
       state = state.copyWith(isLoading: false, error: errorMessage);
       return false;
     } catch (e) {

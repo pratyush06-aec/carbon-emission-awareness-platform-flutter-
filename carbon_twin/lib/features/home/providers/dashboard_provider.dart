@@ -31,6 +31,10 @@ class DashboardData {
 
 final dashboardProvider = FutureProvider<DashboardData>((ref) async {
   final dio = ref.watch(dioProvider);
-  final response = await dio.get('/dashboard');
-  return DashboardData.fromJson(response.data);
+  try {
+    final response = await dio.get('/dashboard');
+    return DashboardData.fromJson(response.data);
+  } on DioException catch (e) {
+    rethrow;
+  }
 });

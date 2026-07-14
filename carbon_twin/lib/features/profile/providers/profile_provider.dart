@@ -59,14 +59,22 @@ class AchievementsData {
 
 final profileProvider = FutureProvider<ProfileData>((ref) async {
   final dio = ref.watch(dioProvider);
-  final response = await dio.get('/profile');
-  return ProfileData.fromJson(response.data);
+  try {
+    final response = await dio.get('/profile');
+    return ProfileData.fromJson(response.data);
+  } on DioException catch (e) {
+    rethrow;
+  }
 });
 
 final achievementsProvider = FutureProvider<AchievementsData>((ref) async {
   final dio = ref.watch(dioProvider);
-  final response = await dio.get('/achievements');
-  return AchievementsData.fromJson(response.data);
+  try {
+    final response = await dio.get('/achievements');
+    return AchievementsData.fromJson(response.data);
+  } on DioException catch (e) {
+    rethrow;
+  }
 });
 
 // Redeem provider

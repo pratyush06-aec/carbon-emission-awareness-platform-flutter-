@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const String baseUrl = 'http://10.0.2.2:3000/api'; // Android Emulator localhost to Next.js
+const String baseUrl = 'http://10.0.2.2:3000/api'; // Android Emulator Loopback
 
 final secureStorageProvider = Provider((ref) => const FlutterSecureStorage());
 
