@@ -18,6 +18,16 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
     super.dispose();
   }
 
+  void _handleSend() {
+    final text = _inputController.text;
+    if (text.trim().isNotEmpty) {
+      ref.read(learnProvider.notifier).sendActivity(text);
+      _inputController.clear();
+      // Unfocus keyboard
+      FocusScope.of(context).unfocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final learnState = ref.watch(learnProvider);
@@ -30,7 +40,10 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
           if (learnState.chatStep > 0)
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(learnProvider.notifier).reset(),
+              onPressed: () {
+                _inputController.clear();
+                ref.read(learnProvider.notifier).reset();
+              },
             ),
         ],
       ),
@@ -42,7 +55,7 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 // AI greeting
-                _ChatBubble(
+                const _ChatBubble(
                   text: 'Hey! The day is almost over. What did you do today?',
                   isUser: false,
                 ),
@@ -51,24 +64,64 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                 // User response
                 if (learnState.chatStep >= 1) ...[
                   _ChatBubble(
-                    text:
-                        'Took cab to office, used AC 8 hours, ordered food online.',
+                    text: learnState.userActivityInput,
                     isUser: true,
                   ),
                   const SizedBox(height: 12),
                 ],
 
-                // AI challenge
-                if (learnState.showChallenge) ...[
+                // Loading Indicator (Typing effect)
+                if (learnState.isLoading) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 12),
+                          Text('Carbon Twin is thinking...', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                
+                // Error message
+                if (learnState.error != null) ...[
+                  Center(
+                    child: Text(
+                      learnState.error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // AI challenge / Analysis
+                if (learnState.chatStep == 2 && learnState.questions.isNotEmpty) ...[
                   _ChatBubble(
-                    text:
-                        'Got it. I\'ve converted that into activities. Entering Challenge Mode! 🎮',
+                    text: learnState.analysisMessage,
                     isUser: false,
                   ),
                   const SizedBox(height: 24),
 
-                  // Quiz Card
-                  _buildQuizCard(context, learnState),
+                  // Quiz Card or Completion Message
+                  if (learnState.challengeComplete)
+                    _buildCompletionCard(context, learnState)
+                  else
+                    _buildQuizCard(context, learnState),
                 ],
               ],
             ),
@@ -86,18 +139,21 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                       decoration: const InputDecoration(
                         hintText: 'Type your activities...',
                         isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(24)),
+                        )
                       ),
-                      onSubmitted: (_) {
-                        ref.read(learnProvider.notifier).sendActivity();
-                      },
+                      onSubmitted: (_) => _handleSend(),
                     ),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: () {
-                      ref.read(learnProvider.notifier).sendActivity();
-                    },
-                    child: const Text('Send'),
+                    style: FilledButton.styleFrom(
+                      shape: const CircleBorder(),
+                      padding: const EdgeInsets.all(16),
+                    ),
+                    onPressed: _handleSend,
+                    child: const Icon(Icons.send),
                   ),
                 ],
               ),
@@ -108,13 +164,12 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
   }
 
   Widget _buildQuizCard(BuildContext context, LearnState state) {
-    final options = [
-      {'text': 'A. Metro', 'isCorrect': false},
-      {'text': 'B. Walk', 'isCorrect': false},
-      {'text': 'C. Bicycle', 'isCorrect': true},
-    ];
-
+    final currentQ = state.questions[state.currentQuestionIndex];
+    final options = currentQ.options;
+    
     return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -130,20 +185,21 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                   ),
                 ),
                 Text(
-                  'Question 1/3',
+                  'Question ${state.currentQuestionIndex + 1}/${state.questions.length}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Text(
-              'You travelled 4 km by cab. What alternative could have significantly reduced your emissions?',
+              currentQ.questionText,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 20),
+            
+            // Options list
             ...List.generate(options.length, (idx) {
-              final opt = options[idx];
-              final isCorrect = opt['isCorrect'] as bool;
+              final isCorrect = currentQ.correctAnswerIndex == idx;
               final isSelected = state.selectedOption == idx;
               final hasAnswered = state.selectedOption != null;
 
@@ -167,13 +223,11 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                     borderRadius: BorderRadius.circular(12),
                     onTap: hasAnswered
                         ? null
-                        : () =>
-                            ref.read(learnProvider.notifier).selectOption(idx),
+                        : () => ref.read(learnProvider.notifier).selectOption(idx),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                       child: Text(
-                        opt['text'] as String,
+                        options[idx],
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                     ),
@@ -181,32 +235,77 @@ class _LearnScreenState extends ConsumerState<LearnScreen> {
                 ),
               );
             }),
+            
+            // Explanation
             if (state.selectedOption != null) ...[
-              const SizedBox(height: 12),
-              if (state.selectedOption == 2)
-                Row(
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: state.selectedOption == currentQ.correctAnswerIndex 
+                      ? Colors.green.withOpacity(0.1) 
+                      : Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green),
+                    Icon(
+                      state.selectedOption == currentQ.correctAnswerIndex ? Icons.check_circle : Icons.info,
+                      color: state.selectedOption == currentQ.correctAnswerIndex ? Colors.green : Colors.orange,
+                    ),
                     const SizedBox(width: 8),
-                    const Text('Correct! '),
-                    Text(
-                      '+20 XP Awarded!',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    Expanded(
+                      child: Text(currentQ.explanation),
                     ),
                   ],
-                )
-              else
-                const Row(
-                  children: [
-                    Icon(Icons.close, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Incorrect. The correct answer was Bicycle.'),
-                  ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              const Center(
+                child: Text('Next question loading...', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey)),
+              )
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletionCard(BuildContext context, LearnState state) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Icon(Icons.stars, size: 64, color: Colors.amber),
+            const SizedBox(height: 16),
+            Text(
+              'Challenge Complete!',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You successfully completed today\'s Gemini challenge!',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
+            if (state.isAwarding)
+              const CircularProgressIndicator()
+            else
+              Text(
+                '+${state.xpEarned} XP Awarded',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
           ],
         ),
       ),

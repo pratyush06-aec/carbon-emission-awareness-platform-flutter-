@@ -55,12 +55,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       state = state.copyWith(isLoading: false, isAuthenticated: true);
       return true;
-    // } on DioException catch (e) {
-    //   print('--- DIO ERROR IN LOGIN ---');
-    //   print('DIO_TYPE: ${e.type}');
-    //   print('DIO_MESSAGE: ${e.message}');
-    //   print('DIO_RESPONSE: ${e.response?.data}');
-    //   print('--------------------------');
+    } on DioException catch (e) {
+      // print('--- DIO ERROR IN LOGIN ---');
+      // print('DIO_TYPE: ${e.type}');
+      // print('DIO_MESSAGE: ${e.message}');
+      // print('DIO_RESPONSE: ${e.response?.data}');
+      // print('--------------------------');
       
       String errorMessage = 'Login failed';
       if (e.response == null) {
@@ -90,12 +90,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       
       state = state.copyWith(isLoading: false, isAuthenticated: true);
       return true;
-    // } on DioException catch (e) {
-    //   print('--- DIO ERROR IN REGISTER ---');
-    //   print('DIO_TYPE: ${e.type}');
-    //   print('DIO_MESSAGE: ${e.message}');
-    //   print('DIO_RESPONSE: ${e.response?.data}');
-    //   print('-----------------------------');
+    } on DioException catch (e) {
+      // print('--- DIO ERROR IN REGISTER ---');
+      // print('DIO_TYPE: ${e.type}');
+      // print('DIO_MESSAGE: ${e.message}');
+      // print('DIO_RESPONSE: ${e.response?.data}');
+      // print('-----------------------------');
 
       String errorMessage = 'Registration failed';
       if (e.response == null) {
